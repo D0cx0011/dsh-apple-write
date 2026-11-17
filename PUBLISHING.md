@@ -6,29 +6,38 @@
 
 | 项 | 状态 |
 |---|---|
+| 仓库 | <https://github.com/D0cx0011/dsh-apple-write>（main `6eda6b0`，tag `v0.3.0`） |
 | 包名 `dsh-apple-write` | npm 上 **未被占用**（`registry.npmjs.org` 返回 404，实测） |
 | 版本 | `0.3.0` |
 | 运行时依赖 | 0（只用 `fetch` + `node:` 内置） |
-| 打包体积 | ~30 kB tgz / ~100 kB 解包 |
+| 打包体积 | 57.5 kB tgz / 12 个文件 |
 | `npm test` | 通过（93 个假服务器请求，全链路） |
+| 隐私闸门 | `node scripts/privacy-check.mjs` 通过（0 命中） |
 | 真实账号验证 | 通过（中国大陆区账号，CalDAV + CardDAV 双通道，见 README「实测记录」） |
+| 干净 profile 安装 | 通过（本地路径安装 + compose + import 三步实测） |
 
-## 1. 发布前必须补的两项
+## 1. 发布前必做
 
-### 1.1 仓库地址（现在故意留空）
+### 1.1 仓库地址（已填）
 
-`package.json` 里**没有** `repository` / `homepage` / `bugs`，因为没有确定的仓库地址——写一个假链接比留空更糟。建好仓库后补上：
+`package.json` 的 `repository` / `homepage` / `bugs` 已指向 `D0cx0011/dsh-apple-write`。换仓库时同步改这三处。
 
-```json
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/<user>/dsh-apple-write.git"
-  },
-  "bugs": { "url": "https://github.com/<user>/dsh-apple-write/issues" },
-  "homepage": "https://github.com/<user>/dsh-apple-write#readme",
+### 1.2 隐私复核（每次发布都跑）
+
+```powershell
+node scripts/privacy-check.mjs
 ```
 
-### 1.2 一个全新 profile 的安装验收
+它按 `npm pack --dry-run --json` 的**真实文件清单**扫描：真实邮箱域、本机绝对路径、iCloud 分片主机、大陆手机号、App 专用密码形状、GitHub token 形状、私钥块，以及**运行期从 `git config` 读到的账号指纹**（不写死在仓库里）。仓库 owner 这种公开身份会放行。
+
+提交身份也必须是不泄露真邮箱的那个：
+
+```powershell
+git config user.name  D0cx0011
+git config user.email D0cx0011@users.noreply.github.com
+```
+
+### 1.3 一个全新 profile 的安装验收
 
 `dsh plugin add` 会先做一次 **DSH 版本/peer 校验**（`engines.dsh` + `@deepseek-ai/*` peer），不满足直接拒绝安装。这个包用一个临时的 probe profile 实测过一次：
 
@@ -45,13 +54,13 @@ dsh --profile probe --dump-config | Select-String apple-write   # 应能看到 p
 
 ```powershell
 cd plugin
-npm run prepack-check        # 可选：见 §3
-npm test                     # 必须绿
-npm pack --dry-run           # 核对内容：lib/ + cordis.patch.yml + README + CHANGELOG + LICENSE
+node scripts/privacy-check.mjs   # 必须 0 命中
+npm test                         # 必须绿
+npm pack --dry-run               # 核对内容：lib/ + patch + README + CHANGELOG + LICENSE + 三个自检脚本
 npm publish --access public
 ```
 
-`prepublishOnly` 会自动再跑一次 `npm test`，测试红了发不出去。
+`prepublishOnly` 会自动再跑一次 `npm test`，测试红了发不出去。隐私闸门不在 `prepublishOnly` 里（它要在打包前跑，属于人工闸），别漏。
 
 ## 3. 发布后自检（三分钟）
 
