@@ -14,7 +14,8 @@
 | `npm test` | 通过（93 个假服务器请求，全链路） |
 | 隐私闸门 | `node scripts/privacy-check.mjs` 通过（0 命中） |
 | 真实账号验证 | 通过（中国大陆区账号，CalDAV + CardDAV 双通道，见 README「实测记录」） |
-| 干净 profile 安装 | 通过（本地路径安装 + compose + import 三步实测） |
+| 干净 profile 安装 | 通过（`github:` 安装 → compose → import → 自带 selftest 93 请求） |
+| 真机验收 | 通过（见 §1.4：安装产物直接打真账号，写 → 回读 → 删 全绿） |
 
 ## 1. 发布前必做
 
@@ -49,6 +50,29 @@ dsh --profile probe --dump-config | Select-String apple-write   # 应能看到 p
 装完后把 `cordis.patch.yml` 配置段写进 probe profile，用 `dsh --profile probe "跑一次 apple_targets"` 确认两条通道都返回。
 
 > 注意：`engines.dsh` 之前写成 `>=0.2.0`，而当前运行时是 `0.1.5-rc.1`——那个值会**在 pnpm 之前**被拒（`incompatible-version`），已改为 `>=0.1.5-rc.1`。以后每次 DSH 大版本升级都要回头确认这个字段。
+
+### 1.4 真机验收（安装产物打真账号）
+
+```powershell
+$env:APPLE_ID  = 'you@example.com'
+$env:APPLE_ASP = 'xxxx-xxxx-xxxx-xxxx'
+node scripts/acceptance.mjs            # 只读：双通道发现 + 列表诊断
+node scripts/acceptance.mjs --write    # 再加一条 [acceptance] 条目：写 → 回读 → 删
+```
+
+脚本测的是**装好的那份**（默认 `~/.dsh/profiles/probe/node_modules/dsh-apple-write`，可用 `--lib <路径>` 指别处），不是工作区的开发副本——这才叫验收。写模式创建 `[acceptance] …` 后立刻删除；中途失败会把 uid 打出来让你手删。
+
+2026-11-16 实测（中国大陆区账号，`p205-caldav.icloud.com.cn`）：
+
+```
+✓ 两个通道都可读
+✓ 至少一个列表声明 VTODO
+✓ 写入后可回读          （到期 2026-12-31，闹钟 -PT1H）
+✓ 删除后不再出现
+验收：PASS
+```
+
+> 这一轮验收抓到一个真 bug：iCloud 在突发请求下会直接断连（第 8 个请求 `fetch failed`），旧代码不重试，一次调用就此失败。已加传输层退避重试（401/403/404 不重试，避免锁号），活跃度探测改串行。
 
 ## 2. 发布
 
