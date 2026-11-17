@@ -54,5 +54,13 @@
       "patch": "./cordis.patch.yml"
     }
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/D0cx0011/dsh-apple-write.git"
+  },
+  "bugs": {
+    "url": "https://github.com/D0cx0011/dsh-apple-write/issues"
+  },
+  "homepage": "https://github.com/D0cx0011/dsh-apple-write#readme",
   "license": "MIT"
 }
