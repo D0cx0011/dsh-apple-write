@@ -48,21 +48,22 @@ iPhone 上：`设置` → 最上面你的名字 → `iCloud` → `高级数据�
 
 ## 装：把下面这段整个发给你的助手
 
-复制 → 发给你的 agent → 把它改好的两处填上 → 发送。
+复制 → 把里面两处 `< >` 换成你的 Apple ID → 整段发给你的助手。
 
 ```text
 帮我装一个 DSH 插件 dsh-apple-write，它让我能从你这里往我 iPhone 的
-提醒事项和通讯录写东西。请按顺序做，每步告诉我结果：
+提醒事项和通讯录写东西。请按顺序做，每步告诉我结果。
 
-1) 安装：
+1) 安装。两条命令依次试，哪条成功用哪条：
    dsh plugin --profile desktop add dsh-apple-write
-   （装不上就试 github:D0cx0011/dsh-apple-write）
+   dsh plugin --profile desktop add github:D0cx0011/dsh-apple-write
 
 2) 配凭据。口令不要写进任何配置文件，走环境变量：
    - 我的 Apple ID：<你的 Apple ID 邮箱>
    - 口令短名：APPLE_ASP
-   - 指导我把口令存成用户环境变量（Windows 用
-     [Environment]::SetEnvironmentVariable）
+   - 我会把口令贴在对话里，你把它设成用户环境变量 APPLE_ASP
+     （Windows 用 [Environment]::SetEnvironmentVariable），
+     不要写进任何文件
    然后在 ~/.dsh/profiles/desktop/cordis.patch.yml 里加：
      - insert:
          - id: apple-write
@@ -84,6 +85,8 @@ iPhone 上：`设置` → 最上面你的名字 → `iCloud` → `高级数据�
 ```
 
 装完自检通过，你就可以直接说人话了，不用再碰配置。
+
+> 助手全程大概只会问你一次口令（就是前面第 3 条生成的那串），整个过程 5 分钟左右，只做这一次。
 
 ---
 
