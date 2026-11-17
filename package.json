@@ -1,0 +1,58 @@
+{
+  "name": "dsh-apple-write",
+  "version": "0.3.0",
+  "description": "Write into Apple Reminders (CalDAV VTODO) and Contacts (CardDAV vCard) from DeepSeek Harness: batch writes with idempotent re-runs, real alarms (VALARM), and one app-specific password for both channels.",
+  "type": "module",
+  "main": "./lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/",
+    "cordis.patch.yml",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "selftest.mjs",
+    "probe.mjs",
+    "live_probe.mjs"
+  ],
+  "scripts": {
+    "test": "node selftest.mjs",
+    "probe": "node probe.mjs",
+    "prepublishOnly": "npm test"
+  },
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "deepseek-harness",
+    "cordis",
+    "apple",
+    "icloud",
+    "caldav",
+    "vtodo",
+    "carddav",
+    "reminders",
+    "contacts",
+    "todo"
+  ],
+  "engines": {
+    "node": ">=20.0.0",
+    "dsh": ">=0.1.5-rc.1"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-tools": "*",
+    "@deepseek-ai/schemastery": "*"
+  },
+  "devDependencies": {
+    "@deepseek-ai/dsh-tools": "0.1.5-rc.2",
+    "@deepseek-ai/schemastery": "3.18.2"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "license": "MIT"
+}

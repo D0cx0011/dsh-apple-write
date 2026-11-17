@@ -1,0 +1,7 @@
+# dsh bundle layer: mount the Apple write tools (Reminders over CalDAV,
+# Contacts over CardDAV).
+# Credentials live in the profile's own patch layer, never in this file — this
+# file ships with the package.
+- insert:
+    - id: apple-write
+      name: 'dsh-apple-write'
