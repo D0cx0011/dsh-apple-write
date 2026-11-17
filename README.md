@@ -124,7 +124,7 @@ node live_probe.mjs   # 对真实 iCloud 用故意错的口令打一发，验 40
 node probe.mjs        # 独立 go/no-go 探测（真实凭据，默认只读）
 ```
 
-`selftest` 覆盖：发现链、VTODO 过滤、三态组件判定、PUT 生成（UTC 换算 / 全天 / 折行 ≤75 octet）、闹钟、卡片生成、读侧折行还原、浮动时间回显、就地 patch（组件作用域 / 属性在子组件之前 / 完成后补 COMPLETED 时间戳）、批量幂等键、同名歧义拒绝、401/403/507/无 VTODO/未公布组件集、`.icloud.com.cn` 区域回退、信号中止，以及**每个工具的输出 schema + render**。
+`selftest` 覆盖：发现链、VTODO 过滤、三态组件判定、PUT 生成（UTC 换算 / 全天 / 折行 ≤75 octet）、闹钟、卡片生成、读侧折行还原、浮动时间回显、就地 patch（组件作用域 / 属性在子组件之前 / 完成后补 COMPLETED 时间戳）、批量幂等键、同名歧义拒绝、401/403/507/无 VTODO/未公布组件集、`.icloud.com.cn` 区域回退、瞬时断连重试（且 401 不重试）、信号中止，以及**每个工具的输出 schema + render**。
 
 ## 实测记录（2026-11，真实 iCloud 账号）
 

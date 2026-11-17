@@ -570,7 +570,46 @@ await assert.rejects(() => update.execute({ uid: 'zzzz', new_title: 'x' }, {}), 
   );
 }
 
-// 8. no VTODO collections at all -> explicit CloudKit hint
+// 7d. transport failures are retried; a real answer is not.
+//     A live acceptance run lost the 8th request of a burst to "fetch failed"
+//     and succeeded on retry — that resilience has to stay.
+{
+  let calls = 0;
+  globalThis.fetch = async (url) => {
+    calls += 1;
+    if (calls <= 3) throw new TypeError('fetch failed');
+    const u = String(url);
+    if (u.includes('/principal')) {
+      return xml(207, `<d:response><d:href>/p/</d:href><d:propstat><d:prop><c:calendar-home-set><d:href>${HOME}</d:href></c:calendar-home-set></d:prop></d:propstat></d:response>`);
+    }
+    return xml(207, `<d:response><d:href>/</d:href><d:propstat><d:prop><d:current-user-principal><d:href>${new URL(PRINCIPAL).pathname}</d:href></d:current-user-principal></d:prop></d:propstat></d:response>`);
+  };
+  const flaky = new RemindersClient({
+    username: CONFIG.appleId,
+    password: CONFIG.appPassword,
+    baseUrl: 'https://caldav.icloud.com/',
+    timeoutMs: 5000,
+  });
+  const principal = await flaky.discoverHome();
+  assert.ok(principal, 'a dropped connection is retried until it answers');
+  assert.ok(calls >= 4, 'the retry actually happened');
+
+  let denied = 0;
+  globalThis.fetch = async () => {
+    denied += 1;
+    return textRes(401, 'denied');
+  };
+  const strict = new RemindersClient({
+    username: CONFIG.appleId,
+    password: CONFIG.appPassword,
+    baseUrl: 'https://caldav.icloud.com/',
+    timeoutMs: 5000,
+  });
+  await assert.rejects(() => strict.discoverHome(), /app-specific password/i);
+  assert.equal(denied, 1, '401 is an answer: it must not be retried (no account lockout risk)');
+}
+
+
 globalThis.fetch = async (url) => {
   if (String(url) === 'https://caldav.icloud.com/') return xml(207, `<d:response><d:href>/</d:href><d:propstat><d:prop><d:current-user-principal><d:href>${new URL(PRINCIPAL).pathname}</d:href></d:current-user-principal></d:prop></d:propstat></d:response>`);
   if (String(url) === PRINCIPAL) return xml(207, `<d:response><d:href>/p/</d:href><d:propstat><d:prop><c:calendar-home-set><d:href>${HOME}</d:href></c:calendar-home-set></d:prop></d:propstat></d:response>`);
