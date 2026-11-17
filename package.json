@@ -1,7 +1,7 @@
 {
   "name": "dsh-apple-write",
   "version": "0.3.0",
-  "description": "Write into Apple Reminders (CalDAV VTODO) and Contacts (CardDAV vCard) from DeepSeek Harness: batch writes with idempotent re-runs, real alarms (VALARM), and one app-specific password for both channels.",
+  "description": "让 AI 助手批量整理 iPhone 的提醒事项和通讯录（DeepSeek Harness 插件）。底层是 CalDAV VTODO / CardDAV vCard：批量写入、幂等重跑、真实闹钟(VALARM)，一个 App 专用密码覆盖两条通道。",
   "type": "module",
   "main": "./lib/index.js",
   "exports": {
