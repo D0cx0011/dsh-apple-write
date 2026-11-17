@@ -59,9 +59,21 @@ const fixed = [
 // 账号指纹：运行时从本机取，绝不写进仓库。
 function accountPatterns() {
   const out = [];
+  // 仓库 owner 是公开身份（就写在 package.json 的 repository 里），不算泄露。
+  let publicOwner = '';
+  try {
+    const pkg = JSON.parse(readFileSync(resolve(root, 'package.json'), 'utf8'));
+    const url = pkg.repository?.url ?? pkg.repository ?? '';
+    const m = /github\.com[/:]([^/]+)\//.exec(String(url));
+    if (m) publicOwner = m[1].toLowerCase();
+  } catch {}
+  ALLOW.push(...(publicOwner ? [publicOwner] : []));
+  if (publicOwner) out.push({ name: 'package.json repository owner', re: /$^/ }); // no-op, documented below
   try {
     const name = execFileSync('git', ['config', 'user.name'], { cwd: root, encoding: 'utf8' }).trim();
-    if (name && name.length >= 3) out.push({ name: 'git user.name', re: new RegExp(escape(name), 'gi') });
+    if (name && name.length >= 3 && name.toLowerCase() !== publicOwner) {
+      out.push({ name: 'git user.name', re: new RegExp(escape(name), 'gi') });
+    }
   } catch {}
   try {
     const email = execFileSync('git', ['config', 'user.email'], { cwd: root, encoding: 'utf8' }).trim();
