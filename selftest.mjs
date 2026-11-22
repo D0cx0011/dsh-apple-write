@@ -464,6 +464,22 @@ assert.ok(fillPut, 'issues a PUT for the candidate');
 assert.match(fillPut.body, /DUE;VALUE=DATE:20261123/, 'writes an all-day DUE');
 assert.match(fillPut.body, /SUMMARY:11\.23 标题里带日期的/, 'does not rewrite the title');
 
+// writeOrder puts the resulting order into X-APPLE-SORT-ORDER, the property the
+// Reminders app keeps a list's manual order in.
+const beforeOrder = calls.length;
+const withOrder = await sortTool.execute({ list: 'Sorted', writeOrder: true }, {});
+assert.equal(withOrder.ordered, 5, 'writes a sort order for every item it returns');
+const orderPuts = calls.slice(beforeOrder).filter((c) => c.method === 'PUT' && c.url.includes('/sorted/'));
+assert.equal(orderPuts.length, 5, 'one PUT per item');
+assert.match(orderPuts[0].body, /X-APPLE-SORT-ORDER:1/, 'first item gets order 1');
+assert.match(orderPuts[0].body, /SUMMARY:UTC 的一条/, 'order 1 goes to the earliest deadline');
+assert.match(orderPuts[4].body, /X-APPLE-SORT-ORDER:5/, 'last item gets order 5');
+assert.equal(
+  (orderPuts[0].body.match(/X-APPLE-SORT-ORDER/g) || []).length,
+  1,
+  'the old value is replaced, never duplicated',
+);
+
 // 3e. reminder_update: patch on a FOLDED body must not concatenate old tails
 const folded = [
   'BEGIN:VCALENDAR',

@@ -211,7 +211,7 @@ dsh --profile desktop --dump-config | Select-String apple-write
 | `reminder_add_many` | `items[]`、`skip_existing`、`list` | CalDAV VTODO |
 | `reminder_lists` | — | CalDAV（含活跃度证据 + 推荐项） |
 | `reminder_list_items` | `query`、`dueFrom`、`dueTo`、`includeCompleted`、`limit` | CalDAV |
-| `reminder_sort` | `by`（due / title）、`order`、`fillDue`、`dryRun`、`includeCompleted` | CalDAV（`fillDue` 会写 DUE） |
+| `reminder_sort` | `by`（due / title）、`order`、`fillDue`、`dryRun`、`writeOrder`、`includeCompleted` | CalDAV（`fillDue` 写 DUE，`writeOrder` 写排序字段） |
 | `reminder_update` | `uid` \| `title`、`new_*`、`complete`、`clear_*` | CalDAV（就地 patch） |
 | `reminder_remove` | `uid` \| `title` | CalDAV |
 | `reminder_remove_many` | `uids[]`、`titles[]` | CalDAV |
@@ -231,11 +231,13 @@ dsh --profile desktop --dump-config | Select-String apple-write
 它把列表按时间排好**并返回**（分桶：已过期 / 今天 / 明天 / 本周 / 以后 / 无日期），
 可选把「写在标题里的日期」搬进真正的 `DUE` 字段（`fillDue`，默认 dry-run）。
 
-它**改不了 iPhone 上列表的显示顺序**：iCloud 的 VTODO 资源里没有任何排序属性
-（实测一个条目 GET 回来只有 `CREATED/DTSTAMP/DUE/STATUS/SUMMARY/UID`；塞进去的
-`X-APPLE-SORT-ORDER` 会被存下来，但没有证据表明提醒事项 App 会因此重排）。
-手机上按什么顺序显示，是 App 自己的「排序方式」设置在管。所以这个工具修的是**数据**
-和**你看到的答案**，不是像素。
+`writeOrder: true` 时，它还会把顺序写进每条提醒的 **`X-APPLE-SORT-ORDER`** —— 这就是 Apple
+提醒事项保存「手动顺序」的地方（在一份 234 条的活列表上实测：204 条带这个属性，整数 5…200，
+步长 1）。写完之后，**手机上的显示顺序取决于提醒事项 App 的「排序方式」是否设成「手动」**：
+设成「到期日/创建日期/优先级」时，App 按它自己的规则排，会盖掉写进去的顺序。
+
+所以这个工具能做两件事：把数据理成可排序的，以及把「谁在前谁在后」写进服务端；
+最后一步「按这个顺序显示」是 App 的设置，不是协议能决定的。
 
 ## 3. 写入语义
 
