@@ -27,6 +27,7 @@ const HOME = `${SHARD}/123456/calendars/`;
 const COLLECTIONS = [
   { href: '/123456/calendars/work/', name: 'Work', comps: ['VTODO'] },
   { href: '/123456/calendars/home/', name: 'Reminders', comps: ['VTODO'] },
+  { href: '/123456/calendars/sorted/', name: 'Sorted', comps: ['VTODO'] },
   { href: '/123456/calendars/personal/', name: 'Personal', comps: ['VEVENT'] },
 ];
 
@@ -59,6 +60,13 @@ const CHILDREN = {
       uid: 'cccc',
       summary: '周报',
     },
+  ],
+  sorted: [
+    { href: '/123456/calendars/sorted/sa.ics', mtime: 'Mon, 10 Nov 2025 09:00:00 GMT', uid: 'sa', summary: '无日期的一条' },
+    { href: '/123456/calendars/sorted/sb.ics', mtime: 'Mon, 10 Nov 2025 09:00:00 GMT', uid: 'sb', summary: '2026-01-05 有明确日期的', due: '20260105' },
+    { href: '/123456/calendars/sorted/sc.ics', mtime: 'Mon, 10 Nov 2025 09:00:00 GMT', uid: 'sc', summary: '后面的一条', due: '20260110T100000' },
+    { href: '/123456/calendars/sorted/sd.ics', mtime: 'Mon, 10 Nov 2025 09:00:00 GMT', uid: 'sd', summary: 'UTC 的一条', due: '20260103T010000Z' },
+    { href: '/123456/calendars/sorted/se.ics', mtime: 'Mon, 10 Nov 2025 09:00:00 GMT', uid: 'se', summary: '11.23 标题里带日期的' },
   ],
   personal: [],
 };
@@ -269,12 +277,14 @@ const removeMany = byName('reminder_remove_many');
 const listItems = byName('reminder_list_items');
 const addMany = byName('reminder_add_many');
 const update = byName('reminder_update');
+const sortTool = byName('reminder_sort');
 
 const EXPECTED_TOOLS = [
   'reminder_add',
   'reminder_add_many',
   'reminder_lists',
   'reminder_list_items',
+  'reminder_sort',
   'reminder_remove',
   'reminder_remove_many',
   'reminder_update',
@@ -291,7 +301,7 @@ const out = await lists.execute({}, {});
 assert.equal(out.reachable, true);
 assert.deepEqual(
   out.lists.filter((l) => l.vtodos === 'yes').map((l) => l.name).sort(),
-  ['Reminders', 'Work'],
+  ['Reminders', 'Sorted', 'Work'],
   'VEVENT-only calendar filtered out',
 );
 assert.ok(calls[0].headers.Authorization.startsWith('Basic '), 'sends HTTP Basic auth');
@@ -401,6 +411,58 @@ assert.equal(all.items.filter((i) => i.alarm).length, 1, 'only the fixture with 
 // 3d2. timezone rendering: Z is an instant, no-Z is a wall clock
 const zItem = await add.execute({ title: '带 Z 的', due: '2026-11-12T09:00:00+08:00' }, {});
 assert.ok(zItem.uid);
+
+// 3d3. reminder_sort: order comes from the parsed instant, never from the raw
+// string (20260105 must sort after 20260103T010000Z even though "T" > "0" bytewise).
+const byDue = await sortTool.execute({ list: 'Sorted' }, {});
+assert.equal(byDue.ok, true);
+assert.equal(byDue.total, 5);
+assert.deepEqual(
+  byDue.items.map((i) => i.title),
+  ['UTC 的一条', '2026-01-05 有明确日期的', '后面的一条', '11.23 标题里带日期的', '无日期的一条'],
+  'dated items ascend, undated items sink to the bottom',
+);
+assert.equal(byDue.buckets.noDue, 2, 'undated items are counted, not dropped from the report');
+assert.equal(
+  byDue.buckets.overdue + byDue.buckets.today + byDue.buckets.tomorrow + byDue.buckets.thisWeek + byDue.buckets.later,
+  3,
+  'every dated item lands in exactly one non-empty bucket',
+);
+
+// desc flips only the dated block; undated items stay last
+const byDueDesc = await sortTool.execute({ list: 'Sorted', order: 'desc' }, {});
+assert.deepEqual(
+  byDueDesc.items.slice(0, 3).map((i) => i.title),
+  ['后面的一条', '2026-01-05 有明确日期的', 'UTC 的一条'],
+  'descending order reverses the dated block only',
+);
+assert.equal(byDueDesc.items[4].title, '无日期的一条', 'undated items stay at the bottom in desc too');
+
+const byTitle = await sortTool.execute({ list: 'Sorted', by: 'title' }, {});
+assert.equal(byTitle.by, 'title');
+assert.equal(byTitle.items.length, 5);
+
+// fillDue without dryRun:false must be a preview and must not touch the server
+const beforeFill = calls.length;
+const preview = await sortTool.execute({ list: 'Sorted', fillDue: true }, {});
+assert.equal(preview.filled, 0, 'dry run reports, never writes');
+assert.equal(preview.planned.length, 1, 'only the title that really starts with a date is a candidate');
+assert.equal(preview.planned[0].due, '2026-11-23', 'M.D in the title resolves to an ISO day');
+assert.equal(preview.planned[0].rest, '标题里带日期的', 'the remainder of the title is reported');
+assert.equal(
+  calls.slice(beforeFill).filter((c) => c.method === 'PUT').length,
+  0,
+  'a dry run issues no PUT at all',
+);
+
+// the write path moves the date into DUE and leaves the title alone
+const applied = await sortTool.execute({ list: 'Sorted', fillDue: true, dryRun: false }, {});
+assert.equal(applied.filled, 1);
+assert.equal(applied.failures.length, 0);
+const fillPut = calls.filter((c) => c.method === 'PUT' && c.url.includes('/se.ics')).pop();
+assert.ok(fillPut, 'issues a PUT for the candidate');
+assert.match(fillPut.body, /DUE;VALUE=DATE:20261123/, 'writes an all-day DUE');
+assert.match(fillPut.body, /SUMMARY:11\.23 标题里带日期的/, 'does not rewrite the title');
 
 // 3e. reminder_update: patch on a FOLDED body must not concatenate old tails
 const folded = [

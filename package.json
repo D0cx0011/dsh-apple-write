@@ -1,6 +1,6 @@
 {
   "name": "dsh-apple-write",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "让 AI 助手批量整理 iPhone 的提醒事项和通讯录（DeepSeek Harness 插件）。底层是 CalDAV VTODO / CardDAV vCard：批量写入、幂等重跑、真实闹钟(VALARM)，一个 App 专用密码覆盖两条通道。",
   "type": "module",
   "main": "./lib/index.js",
@@ -16,11 +16,13 @@
     "LICENSE",
     "selftest.mjs",
     "probe.mjs",
-    "live_probe.mjs"
+    "live_probe.mjs",
+    "scripts/"
   ],
   "scripts": {
     "test": "node selftest.mjs",
     "probe": "node probe.mjs",
+    "compat": "node scripts/compat-check.mjs",
     "prepublishOnly": "npm test"
   },
   "keywords": [
@@ -46,8 +48,8 @@
     "@deepseek-ai/schemastery": "*"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-tools": "0.1.5-rc.2",
-    "@deepseek-ai/schemastery": "3.18.2"
+    "@deepseek-ai/dsh-tools": "0.2.2-rc.5",
+    "@deepseek-ai/schemastery": "3.19.0"
   },
   "dsh": {
     "bundle": {

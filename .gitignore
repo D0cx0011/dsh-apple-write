@@ -12,3 +12,6 @@ Thumbs.db
 # probes write nothing to disk by default; keep any ad-hoc output out of git
 /tmp/
 /_scratch/
+
+# lockfile is per-machine for a published library; the SDK pins live in package.json
+package-lock.json

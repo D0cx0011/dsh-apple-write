@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.3.1 — 2026-11-22
+
+跟着 DSH 升到 0.2.2-rc.5 做的一次维护 + 一个新工具。
+
+### 新增
+
+- **`reminder_sort`**：把一份列表按时间排好并分桶返回（已过期 / 今天 / 明天 / 本周 / 以后 / 无日期），
+  可换个排序键（`by: 'title'`）或倒序。`fillDue: true` 会把「写在标题里的日期」搬进真正的 `DUE`
+  字段——`11.23 计算机网络 实验3` 这种条目的病根就是日期没落到日期字段上，补上之后
+  任何按时间排序才有意义。默认 dry-run，必须显式 `dryRun: false` 才写；单次最多 50 条。
+- `scripts/compat-check.mjs`（`npm run compat`）：把当前安装的 DSH 里 `app.asar` 中的
+  `@deepseek-ai/*` 解到临时目录，用**它自带的那份** `dsh-tools` 跑一遍 `apply()`，确认每个工具
+  都能注册。DSH 一升级就跑这条，不用猜 semver。
+
+### 维护
+
+- 针对 DSH **0.2.2-rc.5** 复验：12 个工具在真实的 `dsh-tools@0.2.2-rc.5` 上全部注册成功
+  （`defineTool` / `output.schema` / `output.render` 契约未变），bundle patch 层照常注入，
+  `--dump-config` 里能看到 `# == dsh-apple-write`。
+- devDependencies 对齐到 `dsh-tools@0.2.2-rc.5` / `schemastery@3.19.0`，`npm test` 现在跑在
+  当前 SDK 上，而不是半年前那份。
+- 行为变化提示：`presentCall()` 在 0.2.x 里只对 Host 本地消费方有效，Web Client 改为自己从
+  参数和结果派生卡片，所以工具卡片样式由客户端决定，插件侧不再影响它。
+
+### 说明
+
+- iCloud 的 VTODO 没有排序属性（已实测），所以 `reminder_sort` 不会去动手机上的显示顺序，
+  只修数据与返回值。README 的「能力边界」一节写清楚了这一点。
+
 ## 0.3.0 — 2026-11-16
 
 首个准备发布的版本。相对内部原型 0.2.0，重点是把「能写」变成「写坏了能修、重跑不重复、闹钟真的响」。

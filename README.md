@@ -211,6 +211,7 @@ dsh --profile desktop --dump-config | Select-String apple-write
 | `reminder_add_many` | `items[]`、`skip_existing`、`list` | CalDAV VTODO |
 | `reminder_lists` | — | CalDAV（含活跃度证据 + 推荐项） |
 | `reminder_list_items` | `query`、`dueFrom`、`dueTo`、`includeCompleted`、`limit` | CalDAV |
+| `reminder_sort` | `by`（due / title）、`order`、`fillDue`、`dryRun`、`includeCompleted` | CalDAV（`fillDue` 会写 DUE） |
 | `reminder_update` | `uid` \| `title`、`new_*`、`complete`、`clear_*` | CalDAV（就地 patch） |
 | `reminder_remove` | `uid` \| `title` | CalDAV |
 | `reminder_remove_many` | `uids[]`、`titles[]` | CalDAV |
@@ -224,6 +225,17 @@ dsh --profile desktop --dump-config | Select-String apple-write
 - 每个工具都有 `output.schema` + `output.render`；`exec.signal` 透传到 `fetch`，取消会中断在途请求。
 - 结构化错误统一 `isError: true`，消息里带 HTTP 状态与下一步动作；`.status` / `.body` 保留在 `error.cause` 上供程序判断。
 - `reminder_remove_many` / `reminder_remove` 的标题匹配是**精确** `SUMMARY` 匹配，多条命中即拒绝并返回候选 uid；绝不模糊删。
+
+### 关于 `reminder_sort` 的能力边界
+
+它把列表按时间排好**并返回**（分桶：已过期 / 今天 / 明天 / 本周 / 以后 / 无日期），
+可选把「写在标题里的日期」搬进真正的 `DUE` 字段（`fillDue`，默认 dry-run）。
+
+它**改不了 iPhone 上列表的显示顺序**：iCloud 的 VTODO 资源里没有任何排序属性
+（实测一个条目 GET 回来只有 `CREATED/DTSTAMP/DUE/STATUS/SUMMARY/UID`；塞进去的
+`X-APPLE-SORT-ORDER` 会被存下来，但没有证据表明提醒事项 App 会因此重排）。
+手机上按什么顺序显示，是 App 自己的「排序方式」设置在管。所以这个工具修的是**数据**
+和**你看到的答案**，不是像素。
 
 ## 3. 写入语义
 
